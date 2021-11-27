@@ -1,0 +1,13 @@
+out/
+.idea
+.idea_modules
+.metals
+.bloop
+.bsp
+.DS_Store
+.bloop
+.metals
+.vscode
+.ammonite
+null/
+target/
