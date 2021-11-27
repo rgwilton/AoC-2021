@@ -9,7 +9,7 @@ import scala.util.Failure
 
 @main def aoc(testNos: String*): Unit = 
   val AllExercises = IndexedSeq(Ex1, Ex2, Ex3)
-  val loops = 100  // To measure jitted performance.
+  val loops = 1  // To measure jitted performance.
 
   val validTestNos = testNos.flatMap(_.toIntOption).filter(_ <= AllExercises.length)
 
@@ -41,8 +41,9 @@ case class Result(name: String, part1: Any, p1Time: Double, part2: Any, p2Time: 
 
 trait Exercise:
   type ParsedInput
+  //def name: String
   val name = getClass.getSimpleName.nn.init
-  val num = name.drop(2)
+  def num = name.drop(2)
 
   def parseInput(input: Iterator[String]): ParsedInput
   def part1(input: ParsedInput): Any
