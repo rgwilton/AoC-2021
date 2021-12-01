@@ -7,6 +7,11 @@ extension (str: Iterator[String])
 extension (str: Array[String])
   def asIntegers: Array[Int] = str.map(_.toInt)
 
+extension (str: String)
+  def asIntegers: Array[Int] = str.split(",").asInstanceOf[Array[String]].asIntegers
+
+
+
 def measure[R](fn: => R): (R, Double) =
   val t1 = System.nanoTime
   val res = fn

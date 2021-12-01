@@ -14,11 +14,7 @@ lazy val root = project
   .settings(
     name := "aoc-2021",
     version := "0.1.0",
-    //nativeImageVersion := "21.3.0",
-    //nativeImageOptions += s"-H:ReflectionConfigurationFiles=${target.value / "native-image-configs" / "reflect-config.json"}",
-    //nativeImageOptions += s"-H:ConfigurationFileDirectories=${target.value / "native-image-configs" }",
-    //nativeImageOptions +="-H:+JNI",
-    //scalacOptions := Seq("-Yexplicit-nulls"),
+    scalacOptions := Seq("-Yexplicit-nulls"),
     scalaVersion := scala3Version,
     Compile / mainClass := Some("aoc.aoc"),
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"

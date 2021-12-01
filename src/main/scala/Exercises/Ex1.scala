@@ -7,16 +7,9 @@ object Ex1 extends Exercise:
 
   def parseInput(input: Iterator[String]) = input.asIntegers.toSeq
 
-  def part1(input: ParsedInput) = 
-    val target = 2020
-    val inputSet = input.to(SortedSet)
+  def increasing(x: Seq[Int]) = x(0) < x(1)   
 
-    val candidates = inputSet.iterator.takeWhile(_ < target/2)
- 
-    candidates
-      .find { x => inputSet.contains(target - x)}
-      .map { x => x * (target - x) }
-      .getOrElse("No match found")
+  def part1(input: ParsedInput) = input.sliding(2).count(increasing)
 
   def part2(input: ParsedInput) =
-    "Not Coded Yet"
+    input.sliding(3).map(_.sum).sliding(2).count(increasing)

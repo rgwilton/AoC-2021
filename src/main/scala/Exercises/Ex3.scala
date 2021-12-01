@@ -11,7 +11,7 @@ object Ex3 extends Exercise:
   inline val Mul = 2
   inline val Halt = 99
 
-  def parseInput(input: Iterator[String]) = input.next.split(",").asIntegers.toArray
+  def parseInput(input: Iterator[String]) = input.next.asIntegers
 
   def runProgram(input: Array[Int], arg1: Int, arg2: Int) = 
     val code = input.clone
