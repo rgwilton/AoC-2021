@@ -28,7 +28,7 @@ import scala.util.Failure
     }.andThen {
       case Success(results) =>
         for Result(name, p1, p1t, p2, p2t, time) <- results do    
-          println(s"""$name: pt1: "$p1" in $p1t ms; pt2: "$p2" in $p2t ms, total; $time ms""")
+          println(s"""$name => part 1: "$p1" in $p1t ms; part 2: "$p2" in $p2t ms, total; $time ms""")
       case Failure(e) => throw e
     }
 

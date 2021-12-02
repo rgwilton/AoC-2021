@@ -5,33 +5,32 @@ import scala.annotation.tailrec
 object Ex2 extends Exercise:
   type ParsedInput = Seq[Command]
 
-  case class Command(move: Move, distance: Int)
-
   enum Move:
     case Forward, Up, Down
-  import Move._
+  
+  object Command:
+    def unapply(input: String): Command =
+      val Array(direction, value) = input.split(' ')
+      Command(Move.valueOf(direction.capitalize), value.toInt)
+      
+  case class Command(move: Move, distance: Int)
 
-  def parseInput(input: Iterator[String]) = 
-    val LineR = """(\w+) (\d+)""".r
-    input.collect { 
-      case LineR(dir, value) => Command(Move.valueOf(dir.capitalize), value.toInt)
-      case x => throw new Exception(s"'$x' doessn't match")
-    }.toSeq
+  def parseInput(input: Iterator[String]) = input.map(Command.unapply).toSeq
 
   def part1(input: ParsedInput) =
     var horizontal, depth = 0
     for Command(move, x) <- input do
       move match
-        case Up => depth -= x
-        case Down => depth += x
-        case Forward => horizontal += x
+        case Move.Up => depth -= x
+        case Move.Down => depth += x
+        case Move.Forward => horizontal += x
     horizontal * depth
 
   def part2(input: ParsedInput) =
     var horizontal, depth, aim = 0
     for Command(move, x) <- input do
       move match
-        case Up => aim -= x
-        case Down => aim += x
-        case Forward => horizontal += x; depth += aim * x
+        case Move.Up => aim -= x
+        case Move.Down => aim += x
+        case Move.Forward => horizontal += x; depth += aim * x
     horizontal * depth
