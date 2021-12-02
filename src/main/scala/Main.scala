@@ -21,9 +21,7 @@ import scala.util.Failure
     Future.sequence {
       exercises.map { ex =>
         Future {
-          val runs = for i <- 1 to loops yield
-            val input = scala.io.Source.fromFile(s"input/input_${ex.num}.txt")
-            ex.run(input.getLines)
+          val runs = for i <- 1 to loops yield ex.run
           runs.last
         }
       }
@@ -41,15 +39,16 @@ case class Result(name: String, part1: Any, p1Time: Double, part2: Any, p2Time: 
 
 trait Exercise:
   type ParsedInput
-  //def name: String
   val name = getClass.getSimpleName.nn.init
-  def num = name.drop(2)
+  val num = name.drop(2)
+  def input = scala.io.Source.fromFile(s"input/input_${num}.txt").getLines
 
   def parseInput(input: Iterator[String]): ParsedInput
   def part1(input: ParsedInput): Any
   def part2(input: ParsedInput): Any
 
-  def run(input: Iterator[String]) =
+  def run: Result = run(input)
+  def run(input: Iterator[String]): Result =
     measure {
       val parsedInput = parseInput(input)
       (measure { part1(parsedInput) },  measure { part2(parsedInput) })

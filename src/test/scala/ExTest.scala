@@ -5,7 +5,7 @@ import org.junit.Assert.*
 
 object TestCase:
   def apply(input: String, p1Res: Any, p2Res: Any): TestCase = 
-    TestCase(Iterator(input), p1Res, p2Res)
+    TestCase(input.stripMargin.linesIterator, p1Res, p2Res)
 
 case class TestCase(input: Iterator[String], p1Res: Any, p2Res: Any)
 
