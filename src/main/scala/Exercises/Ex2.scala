@@ -12,19 +12,14 @@ object Ex2 extends Exercise:
     def unapply(input: String): Command =
       val Array(direction, value) = input.split(' ')
       Command(Move.valueOf(direction.capitalize), value.toInt)
-      
+
   case class Command(move: Move, distance: Int)
 
   def parseInput(input: Iterator[String]) = input.map(Command.unapply).toSeq
 
   def part1(input: ParsedInput) =
-    var horizontal, depth = 0
-    for Command(move, x) <- input do
-      move match
-        case Move.Up => depth -= x
-        case Move.Down => depth += x
-        case Move.Forward => horizontal += x
-    horizontal * depth
+    val cmdSums = input.groupMapReduce(_.move)(_.distance)(_ + _)
+    (cmdSums(Move.Down) - cmdSums(Move.Up)) * cmdSums(Move.Forward)
 
   def part2(input: ParsedInput) =
     var horizontal, depth, aim = 0
