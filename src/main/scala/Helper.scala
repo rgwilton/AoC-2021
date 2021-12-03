@@ -12,6 +12,18 @@ extension (str: Array[String])
 extension (str: String)
   def asIntegers: Array[Int] = str.split(",").asInstanceOf[Array[String]].asIntegers
 
+extension (x: Int)
+  def hasBitSet(index: Int): Boolean =
+    inline def mask = 1 << index
+    (x & mask) != 0
+
+def sumArrayInPlace(a: Array[Int], b: Array[Int]) = 
+  for i <- 0 until a.length do a(i) += b(i)
+  a
+
+def sumArray(a: Array[Int], b: Array[Int]) = 
+  (for i <- 0 until a.length yield a(i) + b(i)).toArray
+
 // Add a pipe operator
 extension [A,B](a: A)
   def  |> (f: (A) => B): B = a.pipe(f)

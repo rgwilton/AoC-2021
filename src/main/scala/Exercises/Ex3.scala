@@ -1,45 +1,45 @@
 package aoc
 
-import scala.annotation.tailrec
 import scala.collection.mutable
-import javax.sound.midi.Instrument
 
 object Ex3 extends Exercise:
-  type ParsedInput = Array[Int]
+  type ParsedInput = (Array[Int], Int)
+  def parseInput(input: Iterator[String]) = 
+    val bufIter = input.buffered
+    val lineLen = bufIter.head.length
+    val inputArray = bufIter.map(Integer.parseInt(_, 2)).toArray
+    (inputArray, lineLen)
 
-  inline val Add = 1
-  inline val Mul = 2
-  inline val Halt = 99
+  extension (a: Iterable[Int])
+    // Convert an sequence of binary digits to an Integer
+    def bitsToInt = 
+      var value = 0
+      for v <- a do 
+        value <<= 1; value += v
+      value 
 
-  def parseInput(input: Iterator[String]) = input.next.asIntegers
-
-  def runProgram(input: Array[Int], arg1: Int, arg2: Int) = 
-    val code = input.clone
-    code(1) = arg1; code(2) = arg2
-
-    var pc = 0; var running = true
-    inline def a1 = code(pc + 1)
-    inline def a2 = code(pc + 2)
-    inline def tgt = code(pc + 3)
-    
-    while running do
-      code(pc) match 
-          case Add => code(tgt) = code(a1) + code(a2); pc += 4
-          case Mul => code(tgt) = code(a1) * code(a2); pc += 4
-          case Halt => running = false
-          case x => throw Exception(s"Unknown opcode $x")
-
-    code(0)
-
-  def part1(input: ParsedInput) = 
-    runProgram(input, 12, 2)
+  def part1(input: ParsedInput) =
+    val (data, lineLen) = input
+    val array = for i <- (0 until lineLen).reverse yield data.count(_.hasBitSet(i))
+    val gamma = array.map(x => if x >= (data.length / 2) then 1 else 0)
+    val epsilon = array.map(x => if x < (data.length / 2) then 1 else 0)
+    gamma.bitsToInt * epsilon.bitsToInt
 
   def part2(input: ParsedInput) =
-    val r = 
-      for 
-        n <- 0 to 99
-        v <- 0 to 99
-        if runProgram(input, n, v) == 19690720
-      yield (100 * n + v)        
-    r.head
+    val (data, lineLen) = input
 
+    def worker(compareFn: (Boolean, Boolean) => Boolean) = 
+      var candidates = mutable.Set(data:_*)
+      var bit = lineLen - 1
+        while candidates.size > 1 do
+          val bitCount = candidates.count(_.hasBitSet(bit))
+          val checkBit = bitCount >= (candidates.size - bitCount)
+          candidates.filterInPlace { candidate => 
+            compareFn(candidate.hasBitSet(bit), checkBit)
+          }
+          bit -= 1
+        candidates.head
+
+    val O2 = worker(_ == _)
+    val CO2 = worker(_ != _)
+    O2 * CO2
