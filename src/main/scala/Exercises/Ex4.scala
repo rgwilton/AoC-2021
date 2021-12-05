@@ -21,8 +21,10 @@ object Ex4 extends Exercise:
       mask == (matched & mask)
 
     def sum = 
+      // Sums the nums that don't have a bit set in 'matched'
       (0 until nums.length).filterNot(matched.hasBitSet).map(nums).sum
 
+    // Update the card with one called number.  Returns whether a card is Bingo.
     def check(called: Int): Boolean = 
       val idx = nums.indexOf(called)
       if idx >= 0 then
@@ -31,6 +33,7 @@ object Ex4 extends Exercise:
       else
         false
 
+    // Check all numbers and return the calledNum and index of the calledNum.
     def checkAll(calledNums: Array[Int]) =
       calledNums.iterator.zipWithIndex.find {
         (calledNum, idx) => check(calledNum)
