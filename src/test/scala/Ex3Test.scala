@@ -15,5 +15,5 @@ class Ex3Test extends ExTest(Ex3):
        |11001
        |00010
        |01010""", 198, 230),
-    TestCase(Ex3.input, 3885894, 4375225)
+    TestCase(exInput, 3885894, 4375225)
   )

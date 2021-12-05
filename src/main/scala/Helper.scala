@@ -17,6 +17,9 @@ extension (x: Int)
     inline def mask = 1 << index
     (x & mask) != 0
 
+  def withBitSet(index: Int): Int =
+    x | (1 << index)
+
 def sumArrayInPlace(a: Array[Int], b: Array[Int]) = 
   for i <- 0 until a.length do a(i) += b(i)
   a

@@ -10,6 +10,7 @@ object TestCase:
 case class TestCase(input: Iterator[String], p1Res: Any, p2Res: Any)
 
 abstract class ExTest(exercise: Exercise):
+  def exInput = exercise.input
   def testcases: Seq[TestCase]
 
   def runTest(tc: TestCase) = 

@@ -9,5 +9,5 @@ class Ex2Test extends ExTest(Ex2):
        |up 3
        |down 8
        |forward 2""", 150, 900),
-    TestCase(Ex2.input, 1451208, 1620141160)
+    TestCase(exInput, 1451208, 1620141160)
   )
