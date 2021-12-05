@@ -7,13 +7,13 @@ object Ex4 extends Exercise:
 
   object Card:
     final val rowMask = Integer.parseInt("11111", 2)
-    final val colMask = Integer.parseInt("100001000010000100001", 2)
+    final val colMask = Integer.parseInt("00001" * 5, 2)
 
   class Card(val nums: Array[Int]):
     var matched = 0
 
     def isBingoRow(row: Int) =
-      inline def mask = Card.rowMask << row
+      inline def mask = Card.rowMask << (5 * row)
       mask == (matched & mask)
 
     def isBingoColumn(column: Int) =
@@ -55,15 +55,20 @@ object Ex4 extends Exercise:
     val res =
       for num <- calledNums.view
           x <- cards.find(card => card.check(num)) yield
-        // println(x.matched.toBinaryString.reverse.grouped(5).mkString("\n"))
-        // println(x.nums.mkString(","))
-        // println(num)
         x.sum * num
     res.head
 
-    // for card <- cards do
-    //     println(card.matched.toBinaryString.reverse.grouped(5).mkString("\n"))
-    //     println(card.nums.mkString(","))      
-    // res.head
+  def part2(input: ParsedInput) =
+    val (calledNums, cards) = input
+    val remCards = mutable.Set(cards:_*)
+    var remNums = calledNums.toList
 
-  def part2(input: ParsedInput) = ""
+    val (idx, (card, num)) = 
+      cards.flatMap { card =>
+        card.checkAll(calledNums) match 
+          case Some(num, idx) =>
+            Some(idx -> (card, num))
+          case None => None
+      }.sortBy(x => x._1).last
+
+    card.sum * num
