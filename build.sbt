@@ -17,5 +17,6 @@ lazy val root = project
     scalacOptions := Seq("-Yexplicit-nulls"),
     scalaVersion := scala3Version,
     Compile / mainClass := Some("aoc.aoc"),
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
+    libraryDependencies ++= Seq("com.novocode" % "junit-interface" % "0.11" % "test",
+                                "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
   )
