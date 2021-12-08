@@ -9,7 +9,7 @@ import scala.util.Failure
 
 @main def aoc(testNos: String*): Unit = 
   val AllExercises = IndexedSeq(Ex1, Ex2, Ex3, Ex4, Ex5, Ex5b, Ex6, Ex7, Ex8)
-  val loops = 100  // To measure jitted performance.
+  val loops = 1000  // To measure jitted performance.
 
   val validTestNos = testNos.flatMap(_.toIntOption).filter(_ <= AllExercises.length)
 
@@ -28,7 +28,7 @@ import scala.util.Failure
     }.andThen {
       case Success(results) =>
         for Result(name, p1, p1t, p2, p2t, time) <- results do    
-          println(s"""$name => part 1: "$p1" in $p1t ms; part 2: "$p2" in $p2t ms, total; $time ms""")
+          println(f"""$name%-5s => part 1: "$p1" in $p1t ms; part 2: "$p2" in $p2t ms, total; $time ms""")
       case Failure(e) => throw e
     }
 
