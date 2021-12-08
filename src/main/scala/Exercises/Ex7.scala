@@ -25,12 +25,12 @@ object Ex7 extends Exercise:
 
   def part1(input: ParsedInput) = 
     val candidate = input.median
-    def fuelCalc(target: Int) = input.foldRight(0)((x, sum) => sum + Math.abs(target - x))
+    def fuelCalc(target: Int) = input.foldLeft(0)((sum, x) => sum + Math.abs(target - x))
     minFuel(input, candidate, fuelCalc)
 
   def part2(input: ParsedInput) =
     val candidate = input.median
     inline def fuelCost(distance: Int) = ((1 + distance) * distance) / 2
-    def fuelCalc(target: Int) = input.foldRight(0)((x, sum) => sum + fuelCost(Math.abs(target - x)))
+    def fuelCalc(target: Int) = input.foldLeft(0)((sum, x) => sum + fuelCost(Math.abs(target - x)))
     minFuel(input, candidate, fuelCalc)
 
