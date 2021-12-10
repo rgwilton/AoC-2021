@@ -16,8 +16,6 @@ object Ex9 extends Exercise:
 
 
   def part1(input: ParsedInput) = 
-    //for row <- input do
-    //  println(row.mkString(""))
     def isMin(row: Int, col: Int) =
       val x = input(row)(col)
       x < input(row - 1)(col)
@@ -32,25 +30,43 @@ object Ex9 extends Exercise:
     lowPoints.sum
 
   // Convert each row into ranges of candidates between 9's.
-  def part2(input: ParsedInput) = ""
-    // var nextId = 0
-    // val basins = Buffer[Int]()
-    // case class BasinRange(start: Int, end: Int, var id: Int):
-    //   //def updateId
-    // var previousSegs = Seq[BasinRange]()
-    // for row <- input do
-    //   var prev9idx = 0
-    //   for i <- 1 until row.length yield
-    //     if row(i) == 9 then
-    //         if i > prev9idx + 1 then
-    //           val (start, end) = (prev9idx + 1, i - 1)
-    //           var id = -1
-    //           previousSegs.collect {
-    //             case b@BasinRange(s, e, i) if end >= s || start <= e =>
-    //               if id == -1 then id = i
-    //               else b.id = id
-    //           }
-    //           if id == -1 then id = nextId; nextId += 1
-    //           BasinRange(start, end, id)
-    //         prev9idx == i
-            
+  def part2(input: ParsedInput) =
+    type BasinId = Int
+  
+    object BasinRange:
+      var nextId = 0
+      def apply(start: Int, end: Int) =
+        nextId += 1 
+        new BasinRange(start, end, nextId -1)
+    case class BasinRange(start: Int, end: Int, var id: BasinId):
+      def length = end - start + 1
+      def overlaps(b: BasinRange) =
+        (start <= b.start && b.start <= end)
+        || (start <= b.end && b.end <= end)
+        || (b.start <= start && start <= b.end)
+         || (b.start <= end && end <= b.end)
+    val basins = mutable.Map[BasinId, Int]()
+
+    var previousSegs = Seq[BasinRange]()
+    for row <- input do
+      def getNextSegs(prev9idx: Int, i: Int, segs: Seq[BasinRange]): Seq[BasinRange] =
+        if i == row.length then segs
+        else if row(i) < 9 then getNextSegs(prev9idx, i + 1, segs)
+        else // row(i) == 9
+          if i > (prev9idx + 1) then
+            getNextSegs(prev9idx = i, i + 1, segs :+ BasinRange(prev9idx + 1, i - 1))
+          else 
+            getNextSegs(prev9idx = i, i + 1, segs)
+
+      val nextSegs = getNextSegs(0, 1, Seq())
+      
+      for seg <- nextSegs do
+        basins(seg.id) = seg.length
+        for overlapSeg <- previousSegs.filter(seg.overlaps) do
+          basins(seg.id) += basins.get(overlapSeg.id).getOrElse(0)
+          basins.remove(overlapSeg.id)
+          nextSegs.filter(_.id == overlapSeg.id).map(_.id = seg.id)
+          overlapSeg.id = seg.id
+      end for
+      previousSegs = nextSegs.toSeq
+    basins.values.toSeq.sorted(using Ordering.Int.reverse).take(3).product

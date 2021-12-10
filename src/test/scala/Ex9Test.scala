@@ -8,6 +8,6 @@ class Ex9Test extends ExTest(Ex9):
         |9856789892
         |8767896789
         |9899965678""", 
-    15, ""),
-    TestCase(exInput, 554, "")
+    15, 1134),
+    TestCase(exInput, 554, 1017792)
   )
