@@ -7,12 +7,6 @@ object Ex7 extends Exercise:
 
   def parseInput(input: Iterator[String]) = input.next.asIntegers.toSeq
 
-  extension (xs: Seq[Int])
-    def mean = xs.sum/xs.length
-    def median = 
-      val sortedXs = xs.sorted
-      sortedXs(xs.size / 2)
-
   def minFuel(input: ParsedInput, candidate: Int, fuelCalc: Int => Int) =
     inline def decreasing(xs: LazyList[Int]) = xs.head > xs.last
 

@@ -3,11 +3,11 @@ package aoc
 import scala.collection.mutable
 
 object Ex8 extends Exercise:
-  type DigitSegments = Set[Char]
-  type UnknownDigits = Set[DigitSegments]
-  type KnownDigits = Map[Int, DigitSegments]
+  type Segments = Set[Char]
+  type UnknownDigits = mutable.Set[Segments]
+  type KnownDigits = Array[Segments]
 
-  case class Line(signals: Seq[DigitSegments], outputs: Seq[DigitSegments])
+  case class Line(signals: Seq[Segments], outputs: Seq[Segments])
   type ParsedInput = Seq[Line]
 
   def parseInput(input: Iterator[String]) = 
@@ -52,11 +52,6 @@ object Ex8 extends Exercise:
 
   val find5 = (unknown: UnknownDigits, known: KnownDigits) =>
     // if x + 1's digits == 9 then 5
-    //known.foreach((i, s) => println(s" $i: $s"))
-    //println(known(1))
-    //println(known(9))
-    //println(unknown.head)
-    //println(unknown.tail)
     5 -> unknown.find { segs => 
       val unknownCount = unknown.size
       val known9segs = known(9)
@@ -69,27 +64,34 @@ object Ex8 extends Exercise:
   val findFuncs = List(find1, find7, find4, find8, find3, find9, find0, find6, find5, find2)
 
   def findDigits(unknown: UnknownDigits): KnownDigits =
+    import scala.language.unsafeNulls
+
     var unknownSegs = unknown
-    var knownSegs: KnownDigits = Map()
+    val knownSegs: Array[Segments] = Array.ofDim[Segments](10)
+
+    val find1 = (unknown: UnknownDigits, known: KnownDigits) =>
+    1 -> unknown.find { _.size == 2 }.get
+
     var fns = findFuncs
     while (fns.nonEmpty) do
-      val found = fns.head(unknownSegs, knownSegs)
-      knownSegs += found
-      unknownSegs -= found._2
+      val (foundDigit, foundSegs) = fns.head(unknownSegs, knownSegs)
+      knownSegs(foundDigit) = foundSegs
+      unknownSegs -= foundSegs
       fns = fns.tail
     knownSegs
 
 
 
   def part1(input: ParsedInput) = 
-    def knownDigit(s: Set[Char]) = s.size == 2 || s.size == 3 || s.size == 4 || s.size == 7
-    input.map(_._2.count(knownDigit)).sum
+    def knownDigit(s: Segments) = 
+      s.size == 2 || s.size == 3 || s.size == 4 || s.size == 7
+    input.map(_.outputs.count(knownDigit)).sum
 
   def part2(input: ParsedInput) =
     def calcValue(line: Line) =
-      val digitsMap = findDigits(line.signals.toSet)
+      val digitsMap = findDigits(line.signals.to(mutable.Set))
       // digitsMap.foreach((i, s) => println(s" $i: $s"))
       // println()
       // line.outputs.foreach(println(_))
-      line.outputs.map(segs => digitsMap.find( (d, s) => s == segs).get._1.toString).mkString.toInt
+      line.outputs.map(segs => digitsMap.indexOf(segs).toString).mkString.toInt
     input.map(calcValue).sum

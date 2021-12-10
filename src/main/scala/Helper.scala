@@ -20,6 +20,18 @@ extension (x: Int)
   def withBitSet(index: Int): Int =
     x | (1 << index)
 
+extension (xs: Seq[Int])
+  def mean = xs.sum/xs.length
+  def median = 
+    val sortedXs = xs.sorted
+    sortedXs(xs.size / 2)
+
+extension (xs: Seq[Long])
+  def mean = xs.sum/xs.length
+  def median = 
+    val sortedXs = xs.sorted
+    sortedXs(xs.size / 2)
+
 def sumArrayInPlace(a: Array[Int], b: Array[Int]) = 
   for i <- 0 until a.length do a(i) += b(i)
   a
