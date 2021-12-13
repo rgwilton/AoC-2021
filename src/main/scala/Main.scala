@@ -8,7 +8,7 @@ import scala.util.Success
 import scala.util.Failure
 
 @main def aoc(testNos: String*): Unit = 
-  val AllExercises = IndexedSeq(Ex1, Ex2, Ex3, Ex4, Ex5b, Ex6, Ex7, Ex8, Ex9, Ex10, Ex11, Ex12)
+  val AllExercises = IndexedSeq(Ex1, Ex2, Ex3, Ex4, Ex5b, Ex6, Ex7, Ex8, Ex9, Ex10, Ex11, Ex12, Ex13)
   val loops = 10  // To measure jitted performance.
 
   val validTestNos = testNos.flatMap(_.toIntOption).filter(_ <= AllExercises.length)

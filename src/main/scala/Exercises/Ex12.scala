@@ -2,6 +2,7 @@ package aoc
 
 import scala.collection.mutable
 import javax.xml.stream.events.EndElement
+import scala.annotation.tailrec
 
 object Ex12 extends Exercise:
   type ParsedInput = Map[String, Cave]
@@ -9,12 +10,10 @@ object Ex12 extends Exercise:
   case class Cave(name: String):
     var exits: Seq[Cave] = Seq()
     val isSmall = name.forall(_.isLower)
+    val maxCount = if isSmall then 1 else Integer.MAX_VALUE
 
   final val Start = Cave("start")
   final val End = Cave("end")
-
-  // All Links are unidirectional
-  //case class Link(from: Cave, to: Cave)
 
   def parseInput(input: Iterator[String]) = 
     val caves = mutable.Map[String, Cave]()
@@ -35,26 +34,20 @@ object Ex12 extends Exercise:
      //  println(s"${c.name}: ${c.exits.toString}")
     cm
 
-  def paths(path: List[Cave]/*, smallCavesVisited: List[Cave]*/): Seq[List[Cave]] =
+  // Not tailrec, can be optimize this into a while loop?
+  def paths(path: List[Cave]): Seq[List[Cave]] =
     val cave = path.head
     if cave == End then 
       Seq(path)
     else 
-      //val scv = if cave.isSmall then cave :: smallCavesVisited else smallCavesVisited
-      //def exitCaves = cave.exits -- scv
-      //if exitCaves.isEmpty then Seq(path)
-      //exitCaves.toSeq.flatMap { cave => paths(cave :: path, scv) }
       for exitCave <- cave.exits
           if !exitCave.isSmall || !path.contains(exitCave)
           path <- paths(exitCave:: path) yield path
 
   def part1(input: ParsedInput) =
     val caves = input
-
-    val ps = 
-      paths(List(Start))
-      //.filter(_.head == End)
-
+    val ps = paths(List(Start))
+      
     //for p <- ps do
     //   println(p.reverse.map(_.name).mkString(" -> "))
     ps.length
