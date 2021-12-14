@@ -22,16 +22,15 @@ object Ex13 extends Exercise:
     
   def foldPaper(paper: Paper, fold: Fold) =
     val (dir, pos) = fold
+    def newPos(xOrY: Int) = pos - (xOrY - pos) 
     for point@(px, py) <- paper do
       dir match
         case 'x' if px > pos =>
-          val newX = pos - (px - pos)
           paper.remove(point)
-          paper.add((newX, py))
+          paper.add((newPos(px), py))
         case 'y' if py > pos =>
-          val newY = pos - (py - pos)
           paper.remove(point)
-          paper.add((px, newY))
+          paper.add((px, newPos(py)))
         case _ => // No change required.
 
   def printPaper(paper: Paper) =

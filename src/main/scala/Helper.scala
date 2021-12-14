@@ -20,6 +20,10 @@ extension (x: Int)
   def withBitSet(index: Int): Int =
     x | (1 << index)
 
+extension (x: Long)
+  def isEven = x % 2 == 0
+  def isOdd = x % 2 == 1
+
 extension (xs: Seq[Int])
   def mean = xs.sum/xs.length
   def median = 
