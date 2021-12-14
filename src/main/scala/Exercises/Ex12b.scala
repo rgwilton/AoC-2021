@@ -82,7 +82,7 @@ object Ex12b extends Exercise:
     count
 
   def paths2par(path: List[Cave], smallTwice: Boolean): Int =
-    if path.lengthIs >= 2 then 
+    if path.lengthIs >= 6 then 
       var count = 0
       for exitCave <- path.head.exits do
         if exitCave.isBig then 
@@ -117,4 +117,4 @@ object Ex12b extends Exercise:
     paths1par(List(Start))
 
   def part2(input: ParsedInput) =
-    paths2(List(Start), false)
+    paths2par(List(Start), false)
