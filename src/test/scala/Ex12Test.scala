@@ -9,7 +9,7 @@ class Ex12Test extends ExTest(Ex12):
         |A-b
         |b-d
         |A-end
-        |b-end""", 10, ""),
+        |b-end""", 10, 36),
     TestCase(
      """|dc-end
         |HN-start
@@ -20,6 +20,6 @@ class Ex12Test extends ExTest(Ex12):
         |HN-end
         |kj-sa
         |kj-HN
-        |kj-dc""", 19, ""),      
-    TestCase(exInput, 3421, "")
+        |kj-dc""", 19, 103),      
+    TestCase(exInput, 3421, 84870)
   )
