@@ -3,7 +3,6 @@ package aoc
 import scala.collection.mutable
 
 object Ex25 extends Exercise:
-  //type EntryMap = mutable.Map[(Int, Int), Direction]
   type ParsedInput = Array[Array[Direction]]
 
   enum Direction:
@@ -22,64 +21,50 @@ object Ex25 extends Exercise:
     var array = input
     val xMax = input(0).length
     val yMax = input.length
-    println(s"Total = ${xMax * yMax}")
-
-    // Move > first.
     var changed = true
-    var changeCount = 0
     var iterations = 0
+
+    def display = 
+      for j <- 0 until yMax do
+        val l =
+          array(j).map(x =>
+            x match
+              case Horizontal => ">"
+              case Vertical => "v"
+              case _ => "."
+          ).mkString("")
+        println(l)
+      println()
+
     while (changed) do
-      changed = false
-      // for j <- 0 until yMax do
-      //   val l =
-      //     array(j).map(x =>
-      //       x match
-      //         case Horizontal => ">"
-      //         case Vertical => "v"
-      //         case _ => "."
-      //     ).mkString("")
-      //   println(l)
-      // println()
+      var hChanges = List[(Int, Int)]()
+      var vChanges = List[(Int, Int)]()
+      var nChanges = List[(Int, Int)]()
 
-      var nextArray = 
-        (for j <- 0 until yMax yield
-          (for i <- 0 until xMax yield
-            inline def nextX = (i + 1) % (xMax)
-            inline def prevX = (i - 1 + xMax) % (xMax)
-            if array(j)(i) == Horizontal && array(j)(nextX) == None then
-              changed = true
-              changeCount += 1
-              None
-            else if array(j)(i) == None && array(j)(prevX) == Horizontal then 
-              Horizontal
+      // Improve performance by considering x and y in the same loop?
+      for y <- 0 until yMax
+          x <- 0 until xMax do
+        if array(y)(x) == None then 
+          val prevX = (x - 1 + xMax) % xMax
+          val prevY = (y - 1 + yMax) % yMax
+          if array(y)(prevX) == Horizontal then
+            hChanges ::= (x, y)
+            if array(prevY)(prevX) == Vertical then
+              vChanges ::= (prevX, y)
+              nChanges ::= (prevX, prevY)
             else
-              array(j)(i)
-          ).toArray
-        ).toArray
-      array = nextArray
+              nChanges ::= (prevX, y)
+          else if array(prevY)(x) == Vertical then
+            vChanges ::= (x, y)
+            nChanges ::= (x, prevY)
 
-      nextArray = 
-        (for j <- 0 until yMax yield
-          (for i <- 0 until xMax yield
-            inline def nextY = (j + 1) % (yMax)
-            inline def prevY = (j - 1 + yMax) % (yMax)
-            if array(j)(i) == Vertical && array(nextY)(i) == None then
-              changed = true
-              changeCount += 1
-              None
-            else if array(j)(i) == None && array(prevY)(i) == Vertical then 
-              Vertical
-            else
-              array(j)(i)
-          ).toArray
-        ).toArray
-      array = nextArray
-            
+      for (x, y) <- nChanges do array(y)(x) = None
+      for (x, y) <- hChanges do array(y)(x) = Horizontal
+      for (x, y) <- vChanges do array(y)(x) = Vertical
+      changed = nChanges.nonEmpty
       iterations += 1
 
-    println(changeCount)
-    println(s"processed cells = ${xMax * yMax * iterations}")
     iterations
-  
+
   def part2(input: ParsedInput) =
     ""
