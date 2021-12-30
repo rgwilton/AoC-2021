@@ -3,7 +3,7 @@ package aoc
 import scala.collection.mutable
 
 object Ex23 extends Exercise:
-  type ParsedInput = Game
+  type ParsedInput = Seq[String]
 
   trait Position:
     def toString: String
@@ -12,9 +12,9 @@ object Ex23 extends Exercise:
     override def toString = "."
 
   case class Amphipod(typ: Char) extends Position:
-    def home = typ - 'A'
+    val home = typ - 'A'
     override def toString = typ.toString
-    val cost = 
+    val stepCost = 
       home match
         case 0 => 1
         case 1 => 10
@@ -22,11 +22,31 @@ object Ex23 extends Exercise:
         case 3 => 1000
 
   object Room:
-    def xCoord(room: Int) = (room + 1) * 2
+    final val homeRooms = 
+      (for l <- 0 to 3 yield
+        (for c <- 0 to 4 yield HomeRoom(c, l)).toArray).toArray
+    def getHomeRoom(count: Int, location: Int) = homeRooms(location)(count)
+    def getEmptyRoom(location: Int) = homeRooms(location)(0)
 
-  case class Room(p1: Position, p2: Position):
-    def isEmpty = 
-      p1 == Empty && p2 == Empty
+  trait Room:
+    def location: Int
+    def count: Int
+
+  case class HomeRoom(count: Int, location: Int) extends Room:
+    val xCoord = (location + 1) * 2
+    def addOne: HomeRoom = Room.getHomeRoom(count + 1, location)
+
+  case class MixedRoom(positions: List[Amphipod], location: Int) extends Room:
+    val xCoord = (location + 1) * 2
+    val count = positions.length
+    def nextAmphipod =
+      val a = positions.head
+      val r = 
+        if positions.tail.forall(_.home == location) then 
+          Room.getHomeRoom(positions.length - 1, location)
+        else
+          this.copy(positions = positions.tail)
+      (a, r)
 
 // #############
 // #..X.X.X.X..#  Corridor is numbered from 0.
@@ -34,14 +54,15 @@ object Ex23 extends Exercise:
 //   #.#.#.#.#
 //   #########
   case class Game(corridor: IndexedSeq[Position],
-                  rooms: IndexedSeq[Room]):
-    def print =
-      println("#############")
-      println(corridor.mkString("#","","#"))
-      println(rooms.map(_.p1).mkString("###","#","###"))
-      println(rooms.map(_.p2).mkString("  #","#","#  "))
-      println("  #########  ")
-      println()
+                  rooms: IndexedSeq[Room],
+                  roomSize: Int):
+    // def print =
+    //   println("#############")
+    //   println(corridor.mkString("#","","#"))
+    //   println(rooms.map(_.head).mkString("###","#","###"))
+    //   println(rooms.map(_.p2).mkString("  #","#","#  "))
+    //   println("  #########  ")
+    //   println()
 
     def corridorValidPositions = Seq(0, 1, 3, 5, 7, 9, 10)
     def corridorClear(start: Int, end: Int) =
@@ -52,68 +73,36 @@ object Ex23 extends Exercise:
           end to (start - 1)
       positions.forall(p => corridor(p) == Empty)
 
-    def isComplete = 
-      rooms.zipWithIndex.forall{ (room, rIndex) =>
-        def p1Ok = room.p1 match
-          case a:Amphipod if a.home == rIndex => true
-          case _ => false
-        def p2Ok = room.p2 match
-          case a:Amphipod if a.home == rIndex => true
-          case _ => false
-        p1Ok && p2Ok
-      }
+    def isComplete = rooms.forall(r => r.isInstanceOf[HomeRoom] && r.count == roomSize)
 
     def allMoves(curCost: Int) = 
       corridor.zipWithIndex.flatMap { (position, index) =>
-        position match {
-          case Empty => Iterable()
-          case a@Amphipod(x) =>
-            val homeRoom = rooms(a.home)
-            rooms(a.home) match {
-              case Room(Empty, Amphipod(x2))
-                if x2 == x && corridorClear(index, Room.xCoord(a.home)) =>
-                val cost = (1 + (Room.xCoord(a.home) -  index).abs) * a.cost
-                Iterable(
-                  (Game(corridor.updated(index, Empty),
-                        rooms.updated(a.home, homeRoom.copy(p1 = a))),
-                   curCost + cost))
-              case Room(Empty, Empty)
-                if corridorClear(index, Room.xCoord(a.home)) =>
-                val cost = (2 + (Room.xCoord(a.home) -  index).abs) * a.cost
-                Iterable(
-                  (Game(corridor.updated(index, Empty),
-                        rooms.updated(a.home, homeRoom.copy(p2 = a))),
-                  curCost + cost))
-              case _ => Iterable()
-            }
-        }
+        position match
+          case Empty => None
+          case amp:Amphipod =>
+            val targetRoom = rooms(amp.home)
+            targetRoom match
+              case hr@HomeRoom(count, location)
+                if corridorClear(index, hr.xCoord) =>
+                val steps = (hr.xCoord - index).abs + roomSize - count
+                Some(this.copy(
+                       corridor = corridor.updated(index, Empty),
+                       rooms = rooms.updated(amp.home, hr.addOne)),
+                     curCost + (steps * amp.stepCost))
+              case _ => None
       } ++
-      rooms.zipWithIndex.flatMap { (room, rIndex) =>
-        room match {
-          case Room(a:Amphipod, b:Amphipod)
-            if a.home != rIndex || b.home != rIndex =>
-            corridorValidPositions
-            .filter(i => corridorClear(Room.xCoord(rIndex), i))
-            .map { i =>
-              val cost = (1 + (Room.xCoord(rIndex) -  i).abs) * a.cost
-              (Game(corridor.updated(i, a),
-                   rooms.updated(rIndex, room.copy(p1 = Empty))),
-               curCost + cost)
-            }
-          case Room(Empty, a:Amphipod) if a.home != rIndex =>
-            corridorValidPositions
-            .filter(i => corridorClear(Room.xCoord(rIndex), i))
-            .map { i =>
-              val cost = (2 + (Room.xCoord(rIndex) -  i).abs) * a.cost
-              (Game(corridor.updated(i, a),
-                   rooms.updated(rIndex, room.copy(p2 = Empty))),
-               curCost + cost)
-            }
-          case _ => Iterable()
+      rooms.collect{ case mr: MixedRoom => mr }.flatMap { mr => 
+        corridorValidPositions
+        .filter(pos => corridorClear(mr.xCoord, pos))
+        .map { pos =>
+          val steps = (mr.xCoord - pos).abs + 1 + roomSize - mr.count
+          val (amp, updatedRoom) = mr.nextAmphipod
+          (this.copy(
+            corridor = corridor.updated(pos, amp),
+            rooms = rooms.updated(mr.location, updatedRoom)),
+            curCost + (steps * amp.stepCost))
         }
       }
-      
-        
 
 // Example game, corridor along the top, room along the bottom.
 //  0  --->   10
@@ -124,18 +113,21 @@ object Ex23 extends Exercise:
 //   #########
 
   val StartRegex = """..#(\w)#(\w)#(\w)#(\w)#.*""".r
-  def parseInput(input: Iterator[String]) = 
+  def input2game(input: Iterable[String]): Game =
     val startPos = 
       for StartRegex(p1, p2, p3, p4) <- input.toSeq yield 
-        Seq(Amphipod(p1(0)), Amphipod(p2(0)), Amphipod(p3(0)), Amphipod(p4(0)))
-    val rooms = startPos(0).zip(startPos(1)).map {
-      (a, b) => Room(a, b)
-    }
-    Game(corridor = 0 to 10 map(_ => Empty),
-         rooms.toIndexedSeq)
+        Seq(p1, p2, p3, p4).map(str => Amphipod(str(0)))
+    val roomSize = startPos.length
+    val rooms = 
+      for location <- 0 to 3 yield
+        val positions = for p <- 0 until roomSize yield 
+          startPos(p)(location)
+        MixedRoom(positions.toList, location)
+    Game(corridor = 0 to 10 map(_ => Empty), rooms.toIndexedSeq, roomSize)
 
-  def part1(input: ParsedInput) = 
-    //input.print
+  def parseInput(input: Iterator[String]) = input.toSeq
+
+  def solve(startGame: Game): Int =
     var count = 0
     // Cache positions that we have already seen, and only consider new games
     // if they reach the same state at lower cost.
@@ -147,7 +139,7 @@ object Ex23 extends Exercise:
       def compare(a:(Game, Int), b:(Game, Int)) = b._2 compare a._2
     }
     var nextMoveQ = mutable.PriorityQueue[(Game, Int)]()(QOrdering)
-    nextMoveQ += ((input, 0))
+    nextMoveQ += ((startGame, 0))
 
     while nextMoveQ.nonEmpty do
       val (cur, cost) = nextMoveQ.dequeue
@@ -161,35 +153,20 @@ object Ex23 extends Exercise:
             case _ => 
               incompleteGames += cur -> cost
               nextMoveQ ++= cur.allMoves(cost)
-
-    // def allValidGames(cur: Game, cost: Int): Unit =
-    //   count += 1
-    //   if cost < bestCompletedCost then
-    //     if cur.isComplete then
-    //       bestCompletedCost = cost
-    //     else
-    //       incompleteGames.get(cur) match
-    //         case Some(gameCost) if gameCost <= cost =>
-    //         case _ => 
-    //           incompleteGames += cur -> cost
-    //           nextMoveQ ++= cur.allMoves(cost).map((a,b) => (b,a))
-      
-              //val nextGames = cur.allMoves(cost).sortBy(_._2)
-              //nextGames.map(allValidGames)
-
-      // if count < 10 then
-      //   cur.print
-      // count += 1
-
-      // if nextGames.isEmpty then
-      //   if cur.isComplete then
-      //     completedGames.add(cur)
-      // else
     
-    //allValidGames(input, 0)
-    println(s"Count is $count")
-    println(s"Incomplete Solutions size is ${incompleteGames.size}")
+//    println(s"Count is $count")
+//    println(s"Incomplete Solutions size is ${incompleteGames.size}")
     bestCompletedCost
 
+  def part1(input: ParsedInput) =
+    val startGame = input2game(input) 
+    solve(startGame)
+
   def part2(input: ParsedInput) =
-    ""
+    // Modify the game, inserting two extra rows:
+    val modifiedInput = 
+      input.take(3)
+      ++ Seq("  #D#C#B#A#", "  #D#B#A#C#") 
+      ++ input.drop(3)
+    val startGame2 = input2game(modifiedInput)
+    solve(startGame2)

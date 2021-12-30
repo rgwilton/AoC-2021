@@ -7,6 +7,6 @@ class Ex23Test extends ExTest(Ex23):
           |#...........#
           |###B#C#B#D###
           |  #A#D#C#A#
-          |  #########""", 12521, ""),
-    TestCase(exInput, 19167, "")
+          |  #########""", 12521, 44169),
+    TestCase(exInput, 19167, 47665)
   )
