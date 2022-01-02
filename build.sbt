@@ -1,5 +1,6 @@
 val scala3Version = "3.1.0"
 
+
 Global / excludeLintKeys += nativeImageVersion
 
 lazy val root = project
@@ -11,6 +12,7 @@ lazy val root = project
     nativeImageOptions +="-H:+JNI",
   )
   .enablePlugins(NativeImagePlugin)
+  .enablePlugins(JavaAppPackaging)
   .settings(
     name := "aoc-2021",
     version := "0.1.0",
