@@ -48,11 +48,6 @@ object Ex23 extends Exercise:
           this.copy(positions = positions.tail)
       (a, r)
 
-// #############
-// #..X.X.X.X..#  Corridor is numbered from 0.
-// ###.#.#.#.###  Room 1 to 4, y position is 1 for top, 2 for bottom.
-//   #.#.#.#.#
-//   #########
   case class Game(corridor: IndexedSeq[Position],
                   rooms: IndexedSeq[Room],
                   roomSize: Int):
@@ -104,14 +99,13 @@ object Ex23 extends Exercise:
         }
       }
 
-// Example game, corridor along the top, room along the bottom.
-//  0  --->   10
-// #############
-// #..X.X.X.X..#  Corridor is numbered from 0.
-// ###.#.#.#.###  Room 1 to 4, y position is 1 for top, 2 for bottom.
-//   #.#.#.#.#
-//   #########
-
+  // Example game, corridor along the top, room along the bottom.
+  //  0  --->   10
+  // #############
+  // #..X.X.X.X..#  Corridor is numbered from 0.
+  // ###.#.#.#.###  Room 1 to 4, y position is 1 for top, 2 for bottom.
+  //   #.#.#.#.#
+  //   #########
   val StartRegex = """..#(\w)#(\w)#(\w)#(\w)#.*""".r
   def input2game(input: Iterable[String]): Game =
     val startPos = 
@@ -130,8 +124,7 @@ object Ex23 extends Exercise:
   def solve(startGame: Game): Int =
     var count = 0
     // Cache positions that we have already seen, and only consider new games
-    // if they reach the same state at lower cost.
-    // Also compare against the best cost.
+    // Give up for any solutions that are already worse than the best soln so far.
     // Use a priority queue of next moves and choose the most expensive each time.
     val incompleteGames = mutable.Map[Game, Int]()
     var bestCompletedCost = Integer.MAX_VALUE
@@ -153,9 +146,7 @@ object Ex23 extends Exercise:
             case _ => 
               incompleteGames += cur -> cost
               nextMoveQ ++= cur.allMoves(cost)
-    
-//    println(s"Count is $count")
-//    println(s"Incomplete Solutions size is ${incompleteGames.size}")
+
     bestCompletedCost
 
   def part1(input: ParsedInput) =
