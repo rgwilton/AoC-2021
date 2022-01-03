@@ -51,6 +51,23 @@ object Ex12b extends Exercise:
            sum += x
       sum
 
+  // tailrec optimized version.
+  @tailrec
+  def paths1tr(candidates: List[CavePath], paths: List[CavePath]): Seq[CavePath] =
+    if candidates.nonEmpty then
+      val path = candidates.head
+      val lastCave = path.head
+      if lastCave == End then 
+        paths1tr(candidates.tail, path :: paths)
+      else 
+        var newCandidates = candidates.tail
+        for exitCave <- lastCave.exits
+            if exitCave.isBig || !path.contains(exitCave) do
+          newCandidates ::= (exitCave :: path)
+        paths1tr(newCandidates, paths)
+    else
+      paths
+
   def paths1par(path: List[Cave]): Int =
     val cave = path.head
     if cave == End then 1
@@ -80,6 +97,29 @@ object Ex12b extends Exercise:
       else if !smallTwice && path.count(_ == exitCave) == 1 then
         count += paths2((exitCave :: path), true) 
     count
+
+  @tailrec
+  def paths2tr(candidates: List[(CavePath, Boolean)], paths: List[CavePath]): Seq[CavePath] =
+    if candidates.nonEmpty then
+      val candidate = candidates.head
+      val path = candidate._1
+      val lastCave = path.head
+
+      var newCandidates = candidates.tail
+      var newPaths = paths
+      val smallTwice = candidate._2
+      for exitCave <- lastCave.exits do
+        if exitCave.isBig then 
+          newCandidates ::= ((exitCave :: path), smallTwice)
+        else if exitCave == End then
+          newPaths ::= (exitCave :: path)
+        else if !path.contains(exitCave) then
+          newCandidates ::= ((exitCave :: path), smallTwice)
+        else if !smallTwice && path.count(_ == exitCave) == 1 then 
+          newCandidates ::= ((exitCave :: path), true)
+      paths2tr(newCandidates, newPaths)
+    else
+      paths
 
   def paths2par(path: List[Cave], smallTwice: Boolean): Int =
     if path.lengthIs >= 6 then 
