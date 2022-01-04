@@ -5,9 +5,7 @@ import scala.collection.mutable
 object Ex20 extends Exercise:
   type ParsedInput = (Array[Int], Image, Int, Int)
   type Image = Map[(Int, Int), Int]
-  case class StartingPlayer(id: Int, startingPosition: Int)
 
-  val InputRegex = """Player (\d+) starting position: (\d+)""".r
   def parseInput(input: Iterator[String]) = 
     val algorithm = input.next.map { ch =>
       if ch == '#' then 1 else 0

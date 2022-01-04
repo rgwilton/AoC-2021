@@ -1,6 +1,6 @@
 package aoc
 
-class Ex22Test extends ExTest(Ex22):
+class Ex22Test extends ExTest(Ex22b):
   val testcases = Seq(
     TestCase(
        """|on x=10..12,y=10..12,z=10..12

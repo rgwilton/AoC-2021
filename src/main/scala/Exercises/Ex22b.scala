@@ -3,7 +3,16 @@ package aoc
 import scala.collection.mutable
 import scala.annotation.switch
 
-object Ex22 extends Exercise:
+import concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.Success
+import scala.util.Failure
+
+object Ex22b extends Exercise:
+  override def input = scala.io.Source.fromFile(s"input/input_22.txt").getLines
+
   type ParsedInput = Seq[Cube]
   enum Dimension:
     case X, Y, Z
@@ -11,7 +20,9 @@ object Ex22 extends Exercise:
 
   case class Cube(on: Boolean, xMin: Int, xMax: Int, yMin: Int, yMax: Int, zMin: Int, zMax: Int):
     def off = !on
-    def size = (1L + xMax - xMin) * (1L + yMax - yMin) * (1L + zMax - zMin)
+    def size = 
+      if (xMin > xMax || yMin > yMax || zMin > zMax) then 0
+      else (1L + xMax - xMin) * (1L + yMax - yMin) * (1L + zMax - zMin)
 
     inline def dMin(using dim: Dimension) =
       dim match
@@ -111,11 +122,10 @@ object Ex22 extends Exercise:
           if reactor(x)(y)(z) then count += 1
     count
 
+  def calc(input: List[Cube]) =
+    var inputCubes = input
 
-  def part2(input: ParsedInput) =
-    // Split all input cubes into non-overlapping cubes.
-    var inputCubes = input.toList
-    
+    // Store the toplevel bounding cubes as an optimization for initial overlap check.
     // Invariant, reactor only contains cubes that are turned on.
     var reactor = mutable.Set[Cube]()
     while inputCubes.nonEmpty do
@@ -128,11 +138,47 @@ object Ex22 extends Exercise:
             // nextCube is off, replace cube with non overlapping ones.
             reactor -= rcube
             reactor ++= nonOverlappingExisting
-          // Add the non overlapping new smaller cubes to check for further conflicts.
           inputCubes = nonOverlappingNew.toList ::: inputCubes
         case None if nextCube.on => 
           reactor += nextCube
         case _ =>
+    //println(reactor.size)
+    (reactor.iterator.map(_.size).sum, reactor.size)
 
-    println(reactor.size)
-    reactor.iterator.map(_.size).sum
+  def part2(input: ParsedInput) =
+    // Partition cube into two based on the split point 'p' and Dimension 'dim'
+    def split(cOpt: Option[Cube], p: Int, dim: Dimension): Seq[Option[Cube]] =
+      given Dimension = dim
+      cOpt match
+        case Some(c) =>
+          if c.dMax < p then Seq(Some(c),None)
+          else if c.dMin >= p then Seq(None, Some(c))
+          else Seq(Some(c.trimDMax(p - 1)), Some(c.trimDMin(p)))
+        case None => Seq(None, None)
+
+    // Partition cube into 4 for the given dimension: -50k-, -50k to -1, 0 to 50k-1, 50k+
+    def split4(cOpt: Option[Cube], dim: Dimension): Seq[Option[Cube]] = 
+      val firstSplit = split(cOpt, 0, dim)
+      split(firstSplit(0), -50_000, dim) ++ split(firstSplit(1), 50_000, dim) 
+
+
+    val splitCubes = 
+      for i <- input yield
+         for xs <- split4(Some(i), X) 
+             xys <- split4(xs, Y)
+             xyzs <- split4(xys, Z) yield xyzs
+
+    val soln = 
+      Future.sequence {
+        for i <- 0 until splitCubes(0).length yield
+          Future { 
+            val cubes = splitCubes.map(_(i)).flatten
+            calc(cubes.toList)
+          }
+      }
+    val res = Await.result(soln, 1 minute)
+    val sum = res.map(_._1).sum
+    val count = res.map(_._2).sum
+    //println(s"Total count = $count")
+    sum
+   
