@@ -1,6 +1,6 @@
 package aoc
 
-class Ex23Test extends ExTest(Ex23):
+class Ex23Test extends ExTest(Ex23b):
   val testcases = Seq(
     TestCase(
        """|#############
