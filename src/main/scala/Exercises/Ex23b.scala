@@ -13,49 +13,58 @@ object Ex23b extends Exercise:
   case object Empty extends Position:
     override def toString = "."
 
+  object Amphipod:
+    def stepCost(homeLocation: Int) = Math.pow(10, homeLocation).toInt
+    val AmphipodsMap = (for l <- 'A' to 'D' yield (l -> Amphipod(l))).toMap
+      
   case class Amphipod(typ: Char) extends Position:
-    val home = typ - 'A'
+    val homeLocation = typ - 'A'
+    val homeXCoord = Room.xCoord(homeLocation)
+
+    // These don't include the cost of entering or leaving a room.
+    def stepsToHomeRoom(curXCoord: Int) =
+      (Room.xCoord(homeLocation) - curXCoord).abs
+    def costToHomeRoom(curXCoord: Int) = stepsToHomeRoom(curXCoord) * stepCost
     override def toString = typ.toString
-    val stepCost = 
-      home match
-        case 0 => 1
-        case 1 => 10
-        case 2 => 100
-        case 3 => 1000
+
+    val stepCost = Amphipod.stepCost(homeLocation) 
+
+  case class GameContext(roomSize: Int)
 
   object Room:
+    def xCoord(location: Int) = (location + 1) * 2
     final val homeRooms = 
       (for l <- 0 to 3 yield
-        (for c <- 0 to 4 yield HomeRoom(c, l)).toArray).toArray
+        (for c <- 0 to 4 yield Room(l, List(), c)).toArray).toArray
     def getHomeRoom(count: Int, location: Int) = homeRooms(location)(count)
-    def getEmptyRoom(location: Int) = homeRooms(location)(0)
 
-  trait Room:
-    def xCoord: Int
-    def location: Int
-    def count: Int
+  case class Room(location: Int, mustLeave: List[Amphipod], inFinalPlace: Int):
+    val next = 
+      if mustLeave.nonEmpty then this.copy(mustLeave = mustLeave.tail)
+      else if inFinalPlace < 4 then this.copy(inFinalPlace = inFinalPlace + 1)
+      else this
 
-  case class HomeRoom(count: Int, location: Int) extends Room:
-    val xCoord = (location + 1) * 2
-    def addOne: HomeRoom = Room.getHomeRoom(count + 1, location)
+    val xCoord = Room.xCoord(location)
+    def addOne: Room = next
+    val hasLeavers = mustLeave.nonEmpty
+    val canFill = mustLeave.isEmpty
+    def nextAmphipod = (mustLeave.head, next)
 
-  case class MixedRoom(positions: List[Amphipod], location: Int) extends Room:
-    val xCoord = (location + 1) * 2
-    val count = positions.length
-    def nextAmphipod =
-      val a = positions.head
-      val r = 
-        if positions.tail.forall(_.home == location) then 
-          Room.getHomeRoom(positions.length - 1, location)
-        else if (positions.tail.isEmpty) then
-          throw Exception("Impossible")
-        else
-          this.copy(positions = positions.tail)
-      (a, r)
+    // Any Amphipod not in the final place must leave the room.
+    def leaveCost(using gCtx:GameContext) =
+      mustLeave.zipWithIndex.map { (amp, i) => (i + 1) * amp.stepCost }.sum
 
+    // Any Amphipod not in the final place must enter the room.
+    def fillCost(using gCtx:GameContext) =
+      (for i <- 1 to (gCtx.roomSize - inFinalPlace) yield i).sum * Amphipod.stepCost(location)
+
+  object Game:
+    def steps(locA: Int, locB: Int) = (locA - locB).abs
+
+  // minRemainingCost is the very minimum cost possible to complete the puzzle.
   case class Game(corridor: IndexedSeq[Position],
                   rooms: IndexedSeq[Room],
-                  roomSize: Int):
+                  minRemainingCost: Int):
     // def print =
     //   println("#############")
     //   println(corridor.mkString("#","","#"))
@@ -64,56 +73,69 @@ object Ex23b extends Exercise:
     //   println("  #########  ")
     //   println()
 
+    // The cost to entry/fill the rooms is entirely static so precomute that once and then it can be ignored.
+    def calcFixedFillLeaveCost(using gCtx: GameContext) =
+      (for r <- rooms yield r.leaveCost + r.fillCost).sum
+
+    def minStepCosts(using gCtx: GameContext) =
+      val ampMoveCosts = 
+        for r <- rooms
+            a <- r.mustLeave yield
+          if a.homeLocation == r.location then 
+            // Must minimally leave to the corridor and return
+            2 * a.stepCost
+          else
+            a.costToHomeRoom(r.xCoord)
+      ampMoveCosts.sum
+
     def corridorValidPositions = Seq(0, 1, 3, 5, 7, 9, 10)
-    def corridorClear(start: Int, end: Int) =
+    def corridorIsClear(start: Int, end: Int) =
       val positions = 
-        if start < end then
-          (start + 1) to end
-        else
-          end to (start - 1)
+        if start < end then (start + 1) to end else end to (start - 1)
       positions.forall(p => corridor(p) == Empty)
 
-    def isComplete = rooms.forall(r => r.isInstanceOf[HomeRoom] && r.count == roomSize)
+    def isComplete(using gCtx: GameContext) = rooms.forall(_.inFinalPlace == gCtx.roomSize)
 
-    def allMoves(curCost: Int) = 
-      corridor.zipWithIndex.flatMap { (position, index) =>
-        position match
-          case Empty => None
-          case amp:Amphipod =>
-            val targetRoom = rooms(amp.home)
-            targetRoom match
-              case hr@HomeRoom(count, location)
-                if corridorClear(index, hr.xCoord) =>
-                val steps = (hr.xCoord - index).abs + roomSize - count
-                Some(this.copy(
-                       corridor = corridor.updated(index, Empty),
-                       rooms = rooms.updated(amp.home, hr.addOne)),
-                     curCost + (steps * amp.stepCost))
-              case _ => None
+    def allMoves(curCost: Int)(using gCtx:GameContext) = 
+      corridor.zipWithIndex.flatMap { (maybeAmp, xCoord) =>
+        maybeAmp match
+          case amp:Amphipod
+            if corridorIsClear(xCoord, amp.homeXCoord) && rooms(amp.homeLocation).canFill =>
+            val homeRoom = rooms(amp.homeLocation)
+            val moveCost = amp.costToHomeRoom(xCoord)
+            Some(Game(corridor.updated(xCoord, Empty),
+                      rooms.updated(homeRoom.location, homeRoom.addOne),
+                      minRemainingCost - moveCost),
+                  curCost + moveCost)
+          case _ => None
       } ++
-      rooms.collect{ case mr: MixedRoom => mr }.flatMap { mr =>
-        val (amp, updatedSrcRoom) = mr.nextAmphipod
-        val targetRoom = rooms(amp.home)
+      rooms.filter(_.hasLeavers).flatMap { room =>
+        val (amp, updatedSrcRoom) = room.nextAmphipod
+        val homeRoom = rooms(amp.homeLocation)
 
-        // Include steps directly from src to target room without stopping in corridor:
-        targetRoom match
-          case hr:HomeRoom
-            if corridorClear(mr.xCoord, hr.xCoord) =>
-            val steps = (hr.xCoord - mr.xCoord).abs + 1 + (2 * roomSize) - hr.count - mr.count
-            Seq((this.copy(
-                    rooms = rooms.updated(amp.home, hr.addOne).updated(mr.location, updatedSrcRoom)),
-                  curCost + (steps * amp.stepCost)))
-          case _ =>
-            corridorValidPositions
-            .filter(pos => corridorClear(mr.xCoord, pos))
-            .map { pos =>
-              val steps = (mr.xCoord - pos).abs + 1 + roomSize - mr.count
-              val (amp, updatedRoom) = mr.nextAmphipod
-              (this.copy(
-                corridor = corridor.updated(pos, amp),
-                rooms = rooms.updated(mr.location, updatedRoom)),
-                curCost + (steps * amp.stepCost))
-            }
+        if homeRoom.canFill && corridorIsClear(room.xCoord, homeRoom.xCoord) then
+          // Move directly to the home room if possible.
+          val moveCost = amp.costToHomeRoom(room.xCoord)
+          Seq((Game(corridor,
+                    rooms.updated(homeRoom.location, homeRoom.addOne).updated(room.location, updatedSrcRoom),
+                    minRemainingCost - moveCost),
+                  curCost + moveCost))
+        else
+          corridorValidPositions
+          .filter(xCoord => corridorIsClear(room.xCoord, xCoord))
+          .map { xCoord =>
+            val (amp, updatedRoom) = room.nextAmphipod
+            val moveCost = amp.stepCost * Game.steps(xCoord, room.xCoord)
+            val minRemCost =
+              if amp.homeLocation == room.location then
+                minRemainingCost + amp.costToHomeRoom(xCoord) - (2 * amp.stepCost)
+              else
+                minRemainingCost - amp.costToHomeRoom(room.xCoord) + amp.costToHomeRoom(xCoord)
+            (Game(corridor.updated(xCoord, amp),
+                  rooms.updated(room.location, updatedRoom),
+                  minRemCost),
+              curCost + moveCost)
+          }
         }
 
   // Example game, corridor along the top, room along the bottom.
@@ -127,34 +149,36 @@ object Ex23b extends Exercise:
   def input2game(input: Iterable[String]): Game =
     val startPos = 
       for StartRegex(p1, p2, p3, p4) <- input.toSeq yield 
-        Seq(p1, p2, p3, p4).map(str => Amphipod(str(0)))
+        Seq(p1, p2, p3, p4).map(str => Amphipod.AmphipodsMap(str(0)))
     val roomSize = startPos.length
     val rooms = 
       for location <- 0 to 3 yield
-        val positions = for p <- 0 until roomSize yield 
+        val allAmps = for p <- 0 until roomSize yield 
           startPos(p)(location)
-        MixedRoom(positions.toList, location)
-    Game(corridor = 0 to 10 map(_ => Empty), rooms.toIndexedSeq, roomSize)
+        val mustLeaveAmps = allAmps.reverse.dropWhile(_.homeLocation == location).reverse
+        Room(location, mustLeaveAmps.toList, roomSize - mustLeaveAmps.length)
+    Game(corridor = 0 to 10 map(_ => Empty), rooms.toIndexedSeq, 0)
 
   def parseInput(input: Iterator[String]) = input.toSeq
 
-  def solve(startGame: Game): Int =
-    var count = 0
+  def solve(startGame: Game)(using gCtx: GameContext): Int =
     // Cache positions that we have already seen, and only consider new games
     // Give up for any solutions that are already worse than the best soln so far.
     // Use a priority queue of next moves and choose the most expensive each time.
     val incompleteGames = mutable.Map[Game, Int]()
     var bestCompletedCost = Integer.MAX_VALUE
+
     object QOrdering extends Ordering[(Game, Int)] {
-      def compare(a:(Game, Int), b:(Game, Int)) = b._2 compare a._2
+      def compare(a:(Game, Int), b:(Game, Int)) = 
+        (b._2 + b._1.minRemainingCost) compare (a._2 + a._1.minRemainingCost)
     }
+
     var nextMoveQ = mutable.PriorityQueue[(Game, Int)]()(QOrdering)
     nextMoveQ += ((startGame, 0))
 
     while nextMoveQ.nonEmpty do
       val (cur, cost) = nextMoveQ.dequeue
-      count += 1
-      if cost < bestCompletedCost then
+      if cost + cur.minRemainingCost < bestCompletedCost then
         if cur.isComplete then
           bestCompletedCost = cost
         else
@@ -163,18 +187,23 @@ object Ex23b extends Exercise:
             case _ => 
               incompleteGames += cur -> cost
               nextMoveQ ++= cur.allMoves(cost)
-
+              
     bestCompletedCost
 
   def part1(input: ParsedInput) =
-    val startGame = input2game(input) 
-    solve(startGame)
-
+    given GameContext = GameContext(roomSize = 2)
+    val startGame = input2game(input)
+    val fixedCosts = startGame.calcFixedFillLeaveCost
+    val soln = solve(startGame.copy(minRemainingCost = startGame.minStepCosts))
+    fixedCosts + soln
   def part2(input: ParsedInput) =
+    given GameContext = GameContext(roomSize = 4)
+
     // Modify the game, inserting two extra rows:
     val modifiedInput = 
       input.take(3)
       ++ Seq("  #D#C#B#A#", "  #D#B#A#C#") 
       ++ input.drop(3)
-    val startGame2 = input2game(modifiedInput)
-    solve(startGame2)
+    val startGame = input2game(modifiedInput)
+    val fixedCosts = startGame.calcFixedFillLeaveCost
+    fixedCosts + solve(startGame.copy(minRemainingCost = startGame.minStepCosts))

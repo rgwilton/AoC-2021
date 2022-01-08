@@ -2,7 +2,8 @@ package aoc
 
 import scala.collection.mutable
 
-object Ex24 extends Exercise:
+object Ex24b extends Exercise:
+  override def input = scala.io.Source.fromFile(s"input/input_24.txt").getLines
   type ParsedInput = Seq[Instruction]
 
   enum Reg:
@@ -25,13 +26,13 @@ object Ex24 extends Exercise:
         case i:Int => i
     for inst <- program do
       inst match
-        case Inp(a) => regs(a.ordinal) = input.next
         case Add(a, b) => regs(a.ordinal) += src(b)
         case Mul(a, b) => regs(a.ordinal) *= src(b)
         case Div(a, b) => regs(a.ordinal) /= src(b)
         case Mod(a, b) => regs(a.ordinal) %= src(b)
         case Eql(a, b) => 
           regs(a.ordinal) = if src(a) == src(b) then 1 else 0
+        case Inp(a) => regs(a.ordinal) = input.next
 
   def parseInput(input: Iterator[String]) = 
     def reg(s: String) = Reg.valueOf(s.toUpperCase.nn)
